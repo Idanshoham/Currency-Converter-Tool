@@ -19,9 +19,13 @@ public class CurrencyConverterToolApplication implements ApplicationRunner {
 
 	public static void main(String[] args) {
 		ApplicationContext applicationContext = SpringApplication.run(CurrencyConverterToolApplication.class, args);
+		System.out.println("before: ");
 		FileParser fileParser = applicationContext.getBean(FileParser.class);
+
 		try {
-			fileParser.convertFileFromCurrencyValues();
+			var currencyValues = fileParser.getConvertedFromCurrencyValues();
+			System.out.println("after: ");
+			fileParser.getFilePrinterService().printCurrencyValues(currencyValues);
 		} catch (IOException | InterruptedException | JSONException e) {
 			e.printStackTrace();
 		}
