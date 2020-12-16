@@ -20,12 +20,13 @@ import static program.constants.Constants.FILE_EXTENSION_TXT;
 @Controller
 public class FileParser {
 
-    @Value("${file.name}") private String fileName;
+    private String fileName;
     @Autowired private final CurrencyConverterService currencyConverterService;
     @Autowired private final FilePrinterService filePrinterService;
-    private File file;
+    private float rate;
 
-    public FileParser(CurrencyConverterService currencyConverterService, FilePrinterService filePrinterService) {
+    public FileParser(@Value("${file.name}") String fileName, CurrencyConverterService currencyConverterService, FilePrinterService filePrinterService) {
+        setFileName(fileName);
         this.currencyConverterService = currencyConverterService;
         this.filePrinterService = filePrinterService;
     }
@@ -36,8 +37,8 @@ public class FileParser {
         ArrayList<Float> fromCurrencyValues = new ArrayList<>(), toCurrencyValues = new ArrayList<>();
 
         Path filePath = Paths.get(FILES_PATH, getFileName() + FILE_EXTENSION_TXT);
-        setFile(new File(filePath.toString()));
-        try (Scanner reader = new Scanner(getFile())) {
+        File file = new File(filePath.toString());
+        try (Scanner reader = new Scanner(file)) {
             while (reader.hasNextLine()) {
                 String data = reader.nextLine();
                 System.out.println(data);
@@ -54,9 +55,10 @@ public class FileParser {
             }
         }
 
-        float rate = getCurrencyConverterService().getSpecificRateBetween(fromCurrencyType, toCurrencyType);
+        setRate(getCurrencyConverterService().getSpecificRateBetween(fromCurrencyType, toCurrencyType));
+
         for (float fromValue : fromCurrencyValues) {
-            toCurrencyValues.add(fromValue * rate);
+            toCurrencyValues.add(fromValue * getRate());
         }
 
         return toCurrencyValues;
@@ -70,15 +72,20 @@ public class FileParser {
         return filePrinterService;
     }
 
-    private File getFile() {
-        return file;
+    public float getRate() {
+        return this.rate;
+    }
+
+    private void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    private void setRate(float rate) {
+        this.rate = rate;
     }
 
     private CurrencyConverterService getCurrencyConverterService() {
         return currencyConverterService;
     }
 
-    private void setFile(File file) {
-        this.file = file;
-    }
 }
