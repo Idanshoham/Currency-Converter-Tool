@@ -5,14 +5,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import program.currencyConverterAPI.services.CurrencyConverterService;
-import program.currencyConverterAPI.services.FilePrinterService;
+import program.currencyConverterAPI.services.CurrencyPrinterService;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 import static program.constants.Constants.FILES_PATH;
 import static program.constants.Constants.FILE_EXTENSION_TXT;
@@ -20,72 +23,43 @@ import static program.constants.Constants.FILE_EXTENSION_TXT;
 @Controller
 public class FileParser {
 
-    private String fileName;
+    private final String fileName;
     @Autowired private final CurrencyConverterService currencyConverterService;
-    @Autowired private final FilePrinterService filePrinterService;
+    @Autowired private final CurrencyPrinterService filePrinterService;
     private float rate;
 
-    public FileParser(@Value("${file.name}") String fileName, CurrencyConverterService currencyConverterService, FilePrinterService filePrinterService) {
-        setFileName(fileName);
+    public FileParser(@Value("${file.name}") String fileName, CurrencyConverterService currencyConverterService, CurrencyPrinterService filePrinterService) {
+        this.fileName = fileName;
         this.currencyConverterService = currencyConverterService;
         this.filePrinterService = filePrinterService;
     }
 
     public ArrayList<Float> getConvertedFromCurrencyValues() throws IOException, InterruptedException, JSONException {
         String fromCurrencyType = "", toCurrencyType = "";
-        int numberOfIterations = 0;
-        ArrayList<Float> fromCurrencyValues = new ArrayList<>(), toCurrencyValues = new ArrayList<>();
-
         Path filePath = Paths.get(FILES_PATH, getFileName() + FILE_EXTENSION_TXT);
-        File file = new File(filePath.toString());
-        try (Scanner reader = new Scanner(file)) {
-            while (reader.hasNextLine()) {
-                String data = reader.nextLine();
-                System.out.println(data);
-                if (numberOfIterations == 0) {
-                    fromCurrencyType = data;
-                }
-                else if (numberOfIterations == 1) {
-                    toCurrencyType = data;
-                }
-                else
-                    fromCurrencyValues.add(Float.parseFloat(data));
+        var fileData = Files.readAllLines(filePath, StandardCharsets.UTF_8);
+        System.out.println(fileData);
 
-                numberOfIterations++;
-            }
-        }
+        fromCurrencyType = fileData.get(0);
+        toCurrencyType = fileData.get(1);
+        this.rate = this.currencyConverterService.getConversionRate(fromCurrencyType, toCurrencyType);
 
-        setRate(getCurrencyConverterService().getSpecificRateBetween(fromCurrencyType, toCurrencyType));
-
-        for (float fromValue : fromCurrencyValues) {
-            toCurrencyValues.add(fromValue * getRate());
-        }
-
-        return toCurrencyValues;
+        return (ArrayList<Float>) fileData.stream().filter(data -> data.matches("[+-]?([0-9]*[.])?[0-9]+"))
+                .map(Float::parseFloat)
+                .map(fromValue -> fromValue * this.rate)
+                .collect(Collectors.toList());
     }
 
     public String getFileName() {
         return this.fileName;
     }
 
-    public FilePrinterService getFilePrinterService() {
+    public CurrencyPrinterService getFilePrinterService() {
         return filePrinterService;
     }
 
     public float getRate() {
         return this.rate;
-    }
-
-    private void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    private void setRate(float rate) {
-        this.rate = rate;
-    }
-
-    private CurrencyConverterService getCurrencyConverterService() {
-        return currencyConverterService;
     }
 
 }

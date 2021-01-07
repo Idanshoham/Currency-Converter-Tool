@@ -3,15 +3,15 @@ import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 import program.currencyConverterAPI.FileParser;
 import program.currencyConverterAPI.services.CurrencyConverterService;
-import program.currencyConverterAPI.services.FilePrinterService;
+import program.currencyConverterAPI.services.CurrencyPrinterService;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FileParserTest {
 
-    private final CurrencyConverterService currencyConverterService = CurrencyConverterService.getInstance();
-    private final FilePrinterService filePrinterService = FilePrinterService.getInstance();
+    private final CurrencyConverterService currencyConverterService = new CurrencyConverterService();
+    private final CurrencyPrinterService filePrinterService = new CurrencyPrinterService();
 
     @Test
     void getConvertedFromCurrencyValuesStandardFileTest() throws InterruptedException, JSONException, IOException {
@@ -42,9 +42,4 @@ class FileParserTest {
         assertTrue(values.isEmpty());
     }
 
-    @Test
-    void getFileName() {
-        FileParser fileParser = new FileParser("Currencies", currencyConverterService, filePrinterService);
-        assertEquals("Currencies", fileParser.getFileName());
-    }
 }
